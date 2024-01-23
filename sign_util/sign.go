@@ -2,7 +2,7 @@ package sign_util
 
 import (
 	"fmt"
-	"github.com/zhiniuer/gopkg/str"
+	"github.com/zhiniuer/goutils/str"
 	"net/url"
 	"sort"
 	"strconv"

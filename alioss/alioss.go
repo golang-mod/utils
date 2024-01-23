@@ -2,25 +2,18 @@ package alioss
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/go-resty/resty/v2"
+	"log"
+	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
-
-type Config struct {
-	AccessKeyId     string `yaml:"access_key_id"`
-	AccessKeySecret string `yaml:"access_key_secret"`
-	Bucket          string `yaml:"bucket"`
-	Endpoint        string `yaml:"endpoint"`
-	EndpointUrl     string `yaml:"endpoint_url"` // 格式为 bucketname.endpoint
-	CallbackUrl     string `yaml:"callback_url"` // 回调地址
-	UploadDir       string `yaml:"upload_dir"`   // 用户上传文件时指定的前缀
-	ExpireTime      int64  `yaml:"expire_time"`  // 超时时间 default:30
-}
 
 type OSS struct {
 	Config  Config
@@ -100,8 +93,8 @@ func (o *OSS) ModifiedTime(objectKey string) (datetime string, err error) {
 		return
 	}
 	date := meta.Get("Last-Modified")
-	onlineAt, err := time.ParseInLocation(time.RFC1123, date, time.UTC)
-	return onlineAt.Local().Format(time.DateTime), nil
+	onlineAt, err := time.ParseInLocation(time.RFC1123, date, time.Local)
+	return onlineAt.Format("2006-01-02 15:04:05"), nil
 }
 
 // CopyTmpFile 拷贝tmp临时文件
@@ -116,7 +109,8 @@ func (o *OSS) CopyTmpFile(tmpUrls []string) (copyUrls []string, err error) {
 		return copyUrls, err
 	}
 	for _, u := range tmpUrls {
-		uParse, err := url.Parse(u)
+		var uParse *url.URL
+		uParse, err = url.Parse(u)
 		if err != nil {
 			return copyUrls, err
 		}
@@ -128,7 +122,7 @@ func (o *OSS) CopyTmpFile(tmpUrls []string) (copyUrls []string, err error) {
 		if strings.HasPrefix(srcObjectKey, o.TmpPath) {
 			destObjectKey := strings.Replace(srcObjectKey, o.TmpPath, "", 1)
 			//destObjectKey := srcObjectKey[len(o.TmpPath):len(srcObjectKey)]
-			_, err := o.bucket.CopyObject(srcObjectKey, destObjectKey)
+			_, err = o.bucket.CopyObject(srcObjectKey, destObjectKey)
 			if err != nil {
 				return copyUrls, err
 			}
@@ -155,46 +149,18 @@ func (o *OSS) UploadBase64(data string, objectKey string) error {
 	return nil
 }
 
-// UploadString 上传字符串
-func (o *OSS) UploadString(data string, objectKey string) error {
-	err := o.connection()
+// ReduceImg 缩放图片
+func ReduceImg(imgUrl string) (string, error) {
+	info, err := GetImageInfo(imgUrl)
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = o.bucket.PutObject(objectKey, strings.NewReader(data))
-	if err != nil {
-		return err
-	}
-	return nil
-}
+	width, err := strconv.ParseInt(info.ImageWidth.Value, 10, 64)
 
-// UploadFile 上传文件
-// objectKey
-// filePath
-// partSize 100K <= ? <= 5G
-func (o *OSS) UploadFile(objectKey string, filePath string, partSize int64) error {
-	err := o.connection()
-	if err != nil {
-		return err
+	if width > 1000 {
+		imgUrl = imgUrl + "?x-oss-process=image/resize,w_1000,m_lfit"
 	}
-	err = o.bucket.UploadFile(objectKey, filePath, partSize)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// DownloadFile 下载文件到本地
-func (o *OSS) DownloadFile(objectKey string, filePath string, partSize int64) error {
-	err := o.connection()
-	if err != nil {
-		return err
-	}
-	err = o.bucket.DownloadFile(objectKey, filePath, partSize)
-	if err != nil {
-		return err
-	}
-	return nil
+	return imgUrl, err
 }
 
 type ImageInfo struct {
@@ -216,4 +182,25 @@ type ImageInfo struct {
 	Orientation struct {
 		Value string `json:"value"`
 	} `json:"Orientation"`
+}
+
+// GetImageInfo 获取图片信息
+func GetImageInfo(imgUrl string) (info ImageInfo, err error) {
+
+	res, err := resty.New().R().
+		Get(imgUrl + "?x-oss-process=image/info")
+	if err != nil {
+		log.Println("err:", err)
+	}
+	if res.StatusCode() != http.StatusOK {
+		err = http.ErrServerClosed
+		return
+	}
+
+	err = json.Unmarshal([]byte(res.Body()), &info)
+	if err != nil {
+		log.Println("err:", err)
+		return
+	}
+	return
 }
