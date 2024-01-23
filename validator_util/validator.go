@@ -3,7 +3,6 @@ package validator_util
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
@@ -47,26 +46,6 @@ func InitTrans(locale string) (err error) {
 		if !ok {
 			return fmt.Errorf("uni.GetTranslator(%s) failed", locale)
 		}
-
-		// 添加额外翻译
-		_ = v.RegisterTranslation("required_with", trans, func(ut ut.Translator) error {
-			return ut.Add("required_with", "{0} 为必填字段!", true)
-		}, func(ut ut.Translator, fe validator.FieldError) string {
-			t, _ := ut.T("required_with", fe.Field())
-			return t
-		})
-		_ = v.RegisterTranslation("required_without", trans, func(ut ut.Translator) error {
-			return ut.Add("required_without", "{0} 为必填字段!", true)
-		}, func(ut ut.Translator, fe validator.FieldError) string {
-			t, _ := ut.T("required_without", fe.Field())
-			return t
-		})
-		_ = v.RegisterTranslation("required_without_all", trans, func(ut ut.Translator) error {
-			return ut.Add("required_without_all", "{0} 为必填字段!", true)
-		}, func(ut ut.Translator, fe validator.FieldError) string {
-			t, _ := ut.T("required_without_all", fe.Field())
-			return t
-		})
 
 		// 注册翻译器
 		switch locale {
@@ -116,24 +95,9 @@ func removeTopStruct(fields map[string]string) map[string]interface{} {
 	return res
 }
 
-// ErrResp handler中调用的错误翻译方法
-func ErrResp(err error) *gin.H {
-	errs, ok := err.(validator.ValidationErrors)
-	fmt.Println(reflect.TypeOf(err))
-	if !ok {
-		return &gin.H{
-			"errCode": -1,
-			"errMsg":  err.Error(), // 翻译校验错误提示
-		}
-	}
-	return &gin.H{
-		"errCode": -1,
-		"errMsg":  removeTopStruct(errs.Translate(trans)), // 翻译校验错误提示
-	}
-}
-
 func ErrFirst(err error) error {
-	errs, ok := err.(validator.ValidationErrors)
+	var errs validator.ValidationErrors
+	ok := errors.As(err, &errs)
 	if !ok {
 		return errors.New(err.Error())
 	}
