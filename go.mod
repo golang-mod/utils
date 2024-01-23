@@ -1,4 +1,4 @@
-module github.com/zhiniuer/gopkg
+module github.com/zhiniuer/goutils
 
 go 1.20
 
