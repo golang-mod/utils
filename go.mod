@@ -1,4 +1,4 @@
-module github.com/zhiniuer/goutils
+module github.com/golang-mod/utils
 
 go 1.20
 
@@ -12,6 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.11.0
+	github.com/golang-module/dongle v0.2.8
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/shopspring/decimal v1.3.1
@@ -34,6 +35,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/emmansun/gmsm v0.15.5 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
 	github.com/glebarez/sqlite v1.10.0 // indirect

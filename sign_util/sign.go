@@ -2,7 +2,7 @@ package sign_util
 
 import (
 	"fmt"
-	"github.com/zhiniuer/goutils/str"
+	"github.com/golang-module/dongle"
 	"net/url"
 	"sort"
 	"strconv"
@@ -14,7 +14,7 @@ func MakeSign(data url.Values, signKey string) url.Values {
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	data.Set("timestamp", timestamp)
 	str1 := kSoftValues(data)
-	sign := str.MD5(str1 + signKey)
+	sign := dongle.Encrypt.FromString(str1 + signKey).ByMd5().String()
 	data.Set("sign", sign)
 	return data
 }
@@ -24,7 +24,7 @@ func CheckSign(data url.Values, signKey string) bool {
 	oldSign := data.Get("sign")
 	data.Del("sign")
 	s := kSoftValues(data)
-	newSign := str.MD5(s + signKey)
+	newSign := dongle.Encrypt.FromString(s + signKey).ByMd5().String()
 	if oldSign == newSign {
 		return true
 	}
