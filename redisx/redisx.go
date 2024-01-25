@@ -10,6 +10,7 @@ type Config struct {
 	Host            string `yaml:"host"`
 	Password        string `yaml:"password"`
 	Port            string `yaml:"port"`
+	Prefix          string `json:"prefix"`
 	DefaultDatabase int    `yaml:"default_database"`
 }
 

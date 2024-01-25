@@ -149,6 +149,35 @@ func (o *OSS) UploadBase64(data string, objectKey string) error {
 	return nil
 }
 
+// UploadString 上传字符串
+func (o *OSS) UploadString(data string, objectKey string) error {
+	err := o.connection()
+	if err != nil {
+		return err
+	}
+	err = o.bucket.PutObject(objectKey, strings.NewReader(data))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UploadFile 上传文件
+// objectKey
+// filePath
+// partSize 100K <= ? <= 5G
+func (o *OSS) UploadFile(objectKey string, filePath string, partSize int64) error {
+	err := o.connection()
+	if err != nil {
+		return err
+	}
+	err = o.bucket.UploadFile(objectKey, filePath, partSize)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // ReduceImg 缩放图片
 func ReduceImg(imgUrl string) (string, error) {
 	info, err := GetImageInfo(imgUrl)
